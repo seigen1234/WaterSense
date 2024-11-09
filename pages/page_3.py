@@ -1,154 +1,149 @@
 import streamlit as st
-import os
+import pandas as pd
 import openai
-from openai import OpenAI
-from pathlib import Path
+import time
+from datetime import timedelta
+import os
 
-st.markdown("# Page 3: Transcription 🎉 (Lab 4)")
-st.sidebar.markdown("# Page 3: Transcription 🎉")
+# Set your OpenAI API key
+openai.api_key = "YOUR_OPEN_API_KEY"  # Replace with your actual API key
 
+# Define city and state map with file paths relative to the repository's root directory
+city_state_map = {
+    "Los Angeles, CA": "openmeteoLA.csv",
+    "San Jose, CA": "openmeteoSJ.csv",
+    "New Orleans, LA": "openmeteoNewOrleans.csv",
+    "Fort Lauderdale, FL": "openmeteoFortL.csv",
+    "New York, NY": "openmeteoNY.csv"
+}
 
-openai.api_key = os.environ["OPENAI_API_KEY"]
+# Load the CSV file based on city selection
+def load_data(city_file):
+    file_path = os.path.join("data", city_file)  # Using a relative path to the 'data' directory
+    try:
+        df = pd.read_csv(file_path)
+        df.columns = df.columns.str.strip()  # Remove any extra whitespace from column names
+        
+        if 'time' in df.columns:
+            df["time"] = pd.to_datetime(df["time"], errors='coerce')
+            return df, "time"
+        else:
+            st.error(f"The 'time' column was not found in the file: {city_file}.")
+            return None, None
+    except FileNotFoundError:
+        st.error(f"The file {city_file} could not be found in the 'data' directory. Please check the file path.")
+        return None, None
+    except Exception as e:
+        st.error(f"An error occurred while loading the data for {city_file}: {e}")
+        return None, None
 
-client = OpenAI()
+# Calculate water saved by skipping watering on rainy days
+def calculate_water_savings(df, daily_watering_gallons=5):
+    rainy_days = df[df['precipitation'] > 0]
+    water_saved = len(rainy_days) * daily_watering_gallons  # Water saved in gallons
+    return water_saved
 
+# Calculate water-to-tree equivalent
+def calculate_tree_impact(water_saved_gallons, water_per_tree_gallons=20):
+    trees = water_saved_gallons / water_per_tree_gallons
+    return int(trees)
 
-# display audio based on the following tutorial:
-# https://www.educative.io/answers/how-to-add-the-media-elements-to-the-streamlit-web-interface
-#speech_file_path = Path(__file__).parent / 'pages/audio/Meeting_Minutes.mp3'
-#audio_file_path = 'audio/Meeting_Minutes.mp3'
-audio_file_path = Path(__file__).parent / 'audio/Meeting_Minutes.mp3'
-audio_file = open(audio_file_path, 'rb')
-audio_bytes = audio_file.read()
-st.audio(audio_bytes, format='audio/mp3')
-st.write("Transcribing and Summarizing Audio file... Please wait for the results...")
-
-# transcribe the audio 
-# Given the path to an audio file, transcribes the audio using Whisper.
-# For more Speech-to-text features, check:
-# https://platform.openai.com/docs/guides/speech-to-text
-def transcribe_audio(audio_file_path):
-    audio_file = open(audio_file_path, "rb")
-    transcription = client.audio.transcriptions.create(
-        model="whisper-1",
-        file=audio_file
+# Generate recommendations using OpenAI ChatCompletion API with retry for rate limit error
+def generate_recommendations(prediction_df, water_saved, trees_plantable):
+    prediction_summary = prediction_df.to_string(index=False)
+    impact_statement = (
+        f"By skipping watering on rainy days, you saved approximately {water_saved} gallons of water, "
+        f"which could support the planting of {trees_plantable} trees."
     )
-    return transcription.text
 
-# Takes the transcription of the meeting and returns a summary of it via text completions
-def abstract_summary_extraction(transcription):
-    response = client.chat.completions.create(
-        model="gpt-3.5-turbo",
-        temperature=0,
-        messages=[
-            {
-                "role": "system",
-                "content": "You are a highly skilled AI trained in language comprehension and summarization. I would like you to read the following text and summarize it into a concise abstract paragraph. Aim to retain the most important points, providing a coherent and readable summary that could help a person understand the main points of the discussion without needing to read the entire text. Please avoid unnecessary details or tangential points."
-            },
-            {
-                "role": "user",
-                "content": transcription
-            }
-        ]
+    prompt = (
+        f"Based on the following future weather predictions:\n{prediction_summary}\n\n"
+        f"{impact_statement}\n\n"
+        "Provide recommendations for household water conservation and usage strategies that would have a bigger impact."
     )
-    return response.choices[0].message.content
+    
+    max_retries = 5  # Set the number of retries
+    retry_delay = 20  # Time to wait (in seconds) between retries if rate limit is hit
 
-# Takes the transcription of the meeting and returns the key points in it via text completions
-def key_points_extraction(transcription):
-    response = client.chat.completions.create(
-        model="gpt-3.5-turbo",
-        temperature=0,
-        messages=[
-            {
-                "role": "system",
-                "content": "You are a highly skilled AI trained in language comprehension and summarization. I would like you to read the following text and summarize it into a concise abstract paragraph. Aim to retain the most important points, providing a coherent and readable summary that could help a person understand the main points of the discussion without needing to read the entire text. Please avoid unnecessary details or tangential points."
-            },
-            {
-                "role": "user",
-                "content": transcription
-            }
-        ]
-    )
-    return response.choices[0].message.content
+    for attempt in range(max_retries):
+        try:
+            response = openai.ChatCompletion.create(
+                model="gpt-3.5-turbo",
+                messages=[
+                    {"role": "system", "content": "You are an assistant providing water conservation tips based on weather data."},
+                    {"role": "user", "content": prompt}
+                ],
+                max_tokens=150,
+                temperature=0.5
+            )
+            return impact_statement + "\n\n" + response['choices'][0]['message']['content'].strip()
+        
+        except openai.error.RateLimitError as e:
+            if attempt < max_retries - 1:
+                st.warning(f"Rate limit reached. Retrying in {retry_delay} seconds...")
+                time.sleep(retry_delay)  # Wait before retrying
+            else:
+                st.error("Rate limit exceeded. Please try again later.")
+                return "Rate limit exceeded. Please try again later."
 
-# Takes the transcription of the meeting and returns the action items from it via text completions
-def action_item_extraction(transcription):
-    response = client.chat.completions.create(
-        model="gpt-3.5-turbo",
-        temperature=0,
-        messages=[
-            {
-                "role": "system",
-                "content": "You are an AI expert in analyzing conversations and extracting action items. Please review the text and identify any tasks, assignments, or actions that were agreed upon or mentioned as needing to be done. These could be tasks assigned to specific individuals, or general actions that the group has decided to take. Please list these action items clearly and concisely."
-            },
-            {
-                "role": "user",
-                "content": transcription
-            }
-        ]
-    )
-    return response.choices[0].message.content
+# Streamlit app
+def main():
+    st.title("Enhanced Weather Data Analysis with Predictions and Recommendations")
 
-# Takes the transcription of the meeting and returns the sentiment of it via text completions
-def sentiment_analysis(transcription):
-    response = client.chat.completions.create(
-        model="gpt-3.5-turbo",
-        temperature=0,
-        messages=[
-            {
-                "role": "system",
-                "content": "As an AI with expertise in language and emotion analysis, your task is to analyze the sentiment of the following text. Please consider the overall tone of the discussion, the emotion conveyed by the language used, and the context in which words and phrases are used. Indicate whether the sentiment is generally positive, negative, or neutral, and provide brief explanations for your analysis where possible. Please keep it to fewer than 5 sentences."
-            },
-            {
-                "role": "user",
-                "content": transcription
-            }
-        ]
-    )
-    return response.choices[0].message.content
+    # User selection for city and state
+    city_state = st.selectbox("Choose a city:", list(city_state_map.keys()))
+    city_file = city_state_map[city_state]  # Get the corresponding file name
+    
+    # Load and process data based on the selected city
+    df, date_column = load_data(city_file)
+    
+    if df is not None and date_column:
+        # Calculate water savings by skipping watering on rainy days
+        water_saved = calculate_water_savings(df)
+        
+        # Calculate how many trees could be planted with the saved water
+        trees_plantable = calculate_tree_impact(water_saved)
+        
+        # Display daily precipitation chart
+        st.subheader("Daily Precipitation (inches)")
+        st.line_chart(df.set_index('time')['precipitation'])
+        
+        # Monthly data aggregation
+        monthly_data = df.resample('M', on='time').agg({
+            'temperature': 'mean',
+            'precipitation': 'sum'
+        }).reset_index()
+        st.subheader(f"Monthly Weather Data for {city_state}")
+        st.write(monthly_data)
+        
+        # Plot monthly temperature
+        st.subheader("Average Monthly Temperature (°F)")
+        st.line_chart(monthly_data.set_index('time')['temperature'])
+        
+        # Future pattern prediction
+        st.subheader("Predicted Future Weather Patterns")
+        future_df = pd.DataFrame({
+            'date': [df['time'].max() + timedelta(days=i*30) for i in range(1, 4)],
+            'predicted_temperature': [monthly_data['temperature'].mean()] * 3,
+            'predicted_precipitation': [monthly_data['precipitation'].mean()] * 3
+        })
+        st.write(future_df)
+        
+        # Water Savings and Tree Planting Potential chart
+        st.subheader("Water Savings and Tree Planting Potential")
+        
+        water_data = pd.DataFrame({
+            'Metric': ['Water Saved (Gallons)', 'Trees Plantable'],
+            'Value': [water_saved, trees_plantable]
+        })
+        st.bar_chart(water_data.set_index('Metric'))
+        
+        # Generative AI recommendations with tree impact statement
+        st.subheader("Recommendations for a Bigger Impact")
+        recommendations = generate_recommendations(future_df, water_saved, trees_plantable)
+        st.write(recommendations)
+    else:
+        st.error("Data for the selected city is not available or the date column was not found.")
 
-# Taken directly from OpenAI's documentation for a meeting minutes generator.
-def meeting_minutes(transcription):
-    abstract_summary = abstract_summary_extraction(transcription)
-    key_points = key_points_extraction(transcription)
-    action_items = action_item_extraction(transcription)
-    sentiment = sentiment_analysis(transcription)
-    return {
-        'abstract_summary': abstract_summary,
-        'key_points': key_points,
-        'action_items': action_items,
-        'sentiment': sentiment
-    }
-
-transcription = transcribe_audio(audio_file_path)
-minutes = meeting_minutes(transcription)
-abstract_summary = "ABSTRACT SUMMARY\n" + minutes["abstract_summary"] + "\n\n"
-key_points = "KEY POINTS\n" + minutes["key_points"] + "\n\n"
-action_items = "ACTION ITEMS\n" + minutes["action_items"] + "\n\n"
-sentiment = "SENTIMENT\n" + minutes["sentiment"] + "\n\n"
-
-print(abstract_summary + key_points + action_items + sentiment)
-
-st.header('Transcription results :blue[cool] :sunglasses:', divider='rainbow')
-
-option = st.radio(
-    "Select your desired output:",
-    [ ":one: :rainbow[Summary]", 
-     ":two: sentiment :movie_camera:",
-     ":three: action_items :ballot_box_with_check:", 
-     ":four: key_points :receipt:"],
-    captions = [
-                "See the summary of the meeting", 
-                "Check out the sentiment of this meeting",
-                "List action items from the meeting",
-                "List key points discussed in the meeting"])
-
-if option == ":one: :rainbow[Summary]":
-    st.write(abstract_summary)
-elif option == ":two: sentiment :movie_camera:":
-    st.write(sentiment)
-elif option == ":three: action_items :ballot_box_with_check:":
-    st.write(action_items)
-elif option == ":four: key_points :receipt:":
-    st.write(key_points)
-#st.write(transcription)
+if __name__ == "__main__":
+    main()
