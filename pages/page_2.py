@@ -31,7 +31,7 @@ def main():
     st.markdown(
         """
         <div style='text-align: center;'>
-            <img src='file:///Users/sams/Desktop/New Water/water2.png' width='150'>
+            <img src='pages/images/water2.png' width='150'>
         </div>
         """, 
         unsafe_allow_html=True
