@@ -93,7 +93,7 @@ interval_data = pd.DataFrame()
 
 if data_source == "CSV":
     # Load data from CSV file
-    file_path = 'milestone3/synthetic_water_usage_data.csv'
+    file_path = 'pages/synthetic_water_usage_data.csv'
     interval_data = load_interval_data_csv(file_path)
 else:
     # Load data from UtilityAPI
