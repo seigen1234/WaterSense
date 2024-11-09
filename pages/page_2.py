@@ -2,8 +2,8 @@ import os
 import streamlit as st
 import openai  # Import OpenAI library for generating advice
 
-# Access the API key from environment variable
-openai_api_key = os.getenv("OPENAI_API_KEY")  # Ensure the API key is set in your environment as "OPENAI_API_KEY"
+# Access the API key from the environment variable
+openai_api_key = os.getenv("OPENAI_API_KEY")
 if openai_api_key is None:
     st.error("OpenAI API key is not set. Please set the environment variable OPENAI_API_KEY.")
 else:
@@ -21,21 +21,9 @@ def generate_water_saving_advice(prompt):
         return f"Error: {e}"
 
 def main():
-    openai_api_key = os.getenv("OPENAI_API_KEY")
-    if openai_api_key is None:
-        st.error("OpenAI API key is not set. Please set the environment variable OPENAI_API_KEY.")
-    else:
-        openai.api_key = openai_api_key
-
-    # Centered Logo and Title with EBMUD Link
-    st.markdown(
-        """
-        <div style='text-align: center;'>
-            <img src='pages/images/water2.png' width='150'>
-        </div>
-        """, 
-        unsafe_allow_html=True
-    )
+    # Display logo image
+    st.image("pages/images/water2.png", width=150)  # Use the correct path to the image file
+    
     st.markdown("# Water Conservation Utility Guide")
     st.markdown("**Based on data from [EBMUD](https://www.ebmud.com/water/water-rates/rates-and-fees-schedules)**")
     st.write("Input your household information below to estimate your water usage and see potential savings by adopting water conservation habits.")
@@ -130,3 +118,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
