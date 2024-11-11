@@ -1,10 +1,9 @@
 streamlit
 pandas
 requests
-json
 openai==1.54.3
 datetime
-fitz
+PyMuPDF
 os
 timedelta
 time
