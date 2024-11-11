@@ -2,7 +2,7 @@ streamlit
 pandas
 requests
 json
-openai
+openai==1.54.3
 datetime
 fitz
 os
