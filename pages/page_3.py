@@ -6,7 +6,7 @@ from datetime import timedelta
 import os
 
 # Set your OpenAI API key
-openai.api_key = "YOUR_OPEN_API_KEY"  # Replace with your actual API key
+openai.api_key = "OPEN_API_KEY"  # Replace with your actual API key
 
 # Define city and state map with file paths relative to the repository's root directory
 city_state_map = {
