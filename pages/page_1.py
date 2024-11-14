@@ -88,7 +88,7 @@ def get_chatbot_response(user_input):
 st.title("Water Usage Tracker")
 
 # Data source selection
-data_source = st.selectbox("Select Data Source", ("CSV", "UtilityAPI"))
+data_source = st.selectbox("Select Data Source", ("Water Usage Data", "Meter ID input (Real Time Water Usage)"))
 interval_data = pd.DataFrame()
 
 if data_source == "CSV":
