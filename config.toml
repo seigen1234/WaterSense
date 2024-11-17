@@ -1,6 +1,0 @@
-[theme]
-primaryColor = "#0077B6"            # Deep blue for primary buttons and highlights
-backgroundColor = "#CAF0F8"         # Light, airy blue for background to mimic water
-secondaryBackgroundColor = "#90E0EF" # Slightly darker blue for sections or cards
-textColor = "#03045E"               # Dark navy blue for readability and contrast
-font = "sans serif"                 # Sans-serif for a clean, modern look
