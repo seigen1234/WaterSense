@@ -2,9 +2,9 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime
 import openai
-
+import os
 # Set your OpenAI API key
-openai.api_key = "OPENAI_API_KEY"  # Replace with your actual API key
+openai.api_key = os.getenv("OPENAI_API_KEY")  # Replace with your actual API key
 
 # Mapping of city names to file paths
 city_files = {
