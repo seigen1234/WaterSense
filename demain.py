@@ -1,17 +1,12 @@
 import streamlit as st
 import os
 from PIL import Image
-from pages.page_1 import water_usage_tracker
-# Main page for Water Conservation Application
 
-
+# Set up page configuration
 st.set_page_config(page_title="WaterSense", page_icon="💧", layout="wide")
 
-# Path to the logo image
+# Path to the logo image (if needed)
 logo_path = os.path.join(os.getcwd(), "logo.png")
-
-
-
 
 # Custom CSS styling
 st.markdown(
@@ -93,22 +88,44 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-# Your existing code here, without modification
+# Title and description of the app
 st.title("WaterSense")
 st.markdown("""
 Welcome to the Water Conservation & Usage Application! This tool is designed to help you monitor and manage your household's water usage effectively. 
 Through this app, you can track your water consumption, receive personalized conservation tips, and see potential savings based on your usage patterns.
 """)
 
+# Add the disclaimer button
+if st.button('Disclaimer'):
+    st.markdown("""
+    ### DISCLAIMER
+
+    When using this application, household information may be shared with third-party APIs to provide enhanced features and services. Please be aware that:
+    
+    - Third-party APIs may collect, process, and store the data you provide.
+    - While we strive to utilize reputable services, we cannot fully control how third parties handle your information.
+    - There is a potential risk of data misuse or unauthorized access by third parties.
+    
+    We strongly recommend that you:
+    - Review the privacy policies of any third-party APIs utilized by this app.
+    - Only share information you are comfortable disclosing.
+    
+    **By using this application, you acknowledge and accept these risks.**
+    """)
+
 # Dropdown for quick access to different app pages
 page = st.selectbox(
     "Select a Page to Navigate:",
-    ("Water Usage Tracker", "Water Conservation Utility Guide", "Weather Data Analysis & Recommendations")
+    ("Select a Page", "Water Usage Tracker", "Water Conservation Utility Guide", "Weather Data Analysis & Recommendations")
 )
-# Load the corresponding pages based on the dropdown selection
-if page == "Water Usage Tracker":
-    water_usage_tracker()
+
+# Handle the page selection logic
+if page == "Select a Page":
+    # Just display the main page content without any page load
+    st.write("Please select a page to navigate.")
+elif page == "Water Usage Tracker":
+    exec(open("pages/page_1.py").read())  # Function from page_1.py
 elif page == "Water Conservation Utility Guide":
-    exec(open("pages/page_2.py").read())
+    exec(open("pages/page_2.py").read())  # Load page_2.py dynamically
 elif page == "Weather Data Analysis & Recommendations":
-    exec(open("pages/page_3.py").read())
+    exec(open("pages/page_3.py").read())  # Load page_3.py dynamically
