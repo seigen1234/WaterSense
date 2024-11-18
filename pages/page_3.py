@@ -2,9 +2,9 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime
 import openai
-
+import os
 # Set your OpenAI API key
-openai.api_key = "OPEN_API_KEY"  # Replace with your actual API key
+openai.api_key = os.getenv("OPENAI_API_KEY")  # Replace with your actual API key
 
 # Mapping of city names to file paths
 city_files = {
@@ -21,7 +21,10 @@ def load_city_data(city):
     file_path = city_files.get(city)
     if file_path:
         try:
-            return pd.read_csv(file_path)
+            data = pd.read_csv(file_path)
+            # Ensure time column is in datetime format
+            data['time'] = pd.to_datetime(data['time'])
+            return data
         except Exception as e:
             st.error(f"Error loading data for {city}: {e}")
     return None
@@ -32,12 +35,22 @@ def get_current_season():
     month = datetime.now().month
     return "Rainy" if month in [11, 12, 1, 2, 3, 4] else "Drought"
 
-# Display summary of the data
+# Display summary of average temperature and precipitation
 def display_data_summary(data):
-    """Display summary statistics for the loaded data."""
+    """Display average temperature and precipitation by month."""
     if data is not None:
-        st.write("### Data Summary")
-        st.write(data.describe())
+        if "time" in data.columns and "temperature" in data.columns and "precipitation" in data.columns:
+            data['month'] = data['time'].dt.month
+            monthly_summary = (
+                data.groupby("month")[["temperature", "precipitation"]]
+                .mean()
+                .rename(columns={"temperature": "Avg Temperature (°F)", "precipitation": "Avg Precipitation (in)"})
+            )
+            monthly_summary.index = monthly_summary.index.map(lambda x: datetime(1900, x, 1).strftime("%B"))
+            st.write("### Monthly Averages")
+            st.dataframe(monthly_summary)
+        else:
+            st.warning("Required data columns (time, temperature, precipitation) are not available.")
     else:
         st.warning("No data available for the selected city.")
 
