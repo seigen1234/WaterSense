@@ -91,7 +91,7 @@ st.title("Water Usage Tracker")
 data_source = st.selectbox("Select Data Source", ("Water Usage Data", "Meter ID input (Real Time Water Usage)"))
 interval_data = pd.DataFrame()
 
-if data_source == "CSV":
+if data_source == "Water Usage Data":
     # Load data from CSV file
     file_path = 'pages/synthetic_water_usage_data.csv'
     interval_data = load_interval_data_csv(file_path)
