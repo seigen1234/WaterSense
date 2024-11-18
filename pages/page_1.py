@@ -2,15 +2,19 @@ import streamlit as st
 import pandas as pd
 import requests
 import openai
-import os
+import os  # Import the os module
 from datetime import datetime, timedelta
 
 # UtilityAPI base URL and headers (replace 'YOUR_API_KEY' with actual API key)
 API_URL = 'https://utilityapi.com/api/v2/meters/{meter_id}/intervals'
 headers = {'Authorization': 'Bearer YOUR_API_KEY'}
 
-# OpenAI API setup (make sure to add your OpenAI API key here)
+# OpenAI API setup (ensure your OpenAI API key is set as an environment variable)
 openai_api_key = os.getenv('OPENAI_API_KEY')
+if not openai_api_key:
+    st.error("OpenAI API key is missing. Please set the 'OPENAI_API_KEY' environment variable.")
+else:
+    openai.api_key = openai_api_key
 
 def load_interval_data_csv(file_path):
     return pd.read_csv(file_path)
@@ -68,9 +72,7 @@ def get_suggestions(efficiency_score):
 def get_chatbot_response(user_input):
     response = openai.ChatCompletion.create(
         model="gpt-3.5-turbo",
-        messages=[
-            {"role": "user", "content": user_input}
-        ]
+        messages=[{"role": "user", "content": user_input}]
     )
     return response.choices[0].message['content']
 
@@ -123,13 +125,8 @@ def water_usage_tracker():
         st.metric(label="Efficiency Score (Average is 0%)", value=f"{efficiency_score:.2f}%")
 
         # Efficiency explanation
-        st.markdown("""
-        ### Understanding Your Efficiency Score:
-        - **Efficiency Score**: Measures your water usage against an average expected usage based on the number of people in your household.
-        - **Score Calculation Formula**:
-          - Average Expected Usage: `Number of People × 50 gallons/day × 7 days`
-          - Efficiency Score: `100 - (Total Usage / Average Expected Usage × 100)`
-        """)
+        st.markdown("""### Understanding Your Efficiency Score""")
+        st.markdown("""- Efficiency measures your water usage compared to the average household.""")
 
         # Provide suggestions based on efficiency score
         st.markdown("### 💡 Suggestions to Improve Efficiency")
@@ -152,3 +149,4 @@ def water_usage_tracker():
 # Running the app
 if __name__ == "__main__":
     water_usage_tracker()
+
