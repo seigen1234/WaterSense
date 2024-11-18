@@ -1,149 +1,111 @@
 import streamlit as st
 import pandas as pd
+from datetime import datetime
 import openai
-import time
-from datetime import timedelta
-import os
 
 # Set your OpenAI API key
-openai.api_key = "OPENAI_API_KEY"  # Replace with your actual API key
+openai.api_key = "OPEN_API_KEY"  # Replace with your actual API key
 
-# Define city and state map with file paths relative to the repository's root directory
-city_state_map = {
-    "Los Angeles, CA": "openmeteoLA.csv",
-    "San Jose, CA": "openmeteoSJ.csv",
-    "New Orleans, LA": "openmeteoNewOrleans.csv",
-    "Fort Lauderdale, FL": "openmeteoFortL.csv",
-    "New York, NY": "openmeteoNY.csv"
+# Mapping of city names to file paths
+city_files = {
+    "San Francisco": "data/SanFrancisco.csv",
+    "San Jose": "data/SanJose.csv",
+    "Palo Alto": "data/Palo Alto.csv",
+    "Berkeley": "data/Berkeley.csv",
+    "Fremont": "data/Fremont.csv"
 }
 
-# Load the CSV file based on city selection
-def load_data(city_file):
-    file_path = os.path.join("data", city_file)  # Using a relative path to the 'data' directory
-    try:
-        df = pd.read_csv(file_path)
-        df.columns = df.columns.str.strip()  # Remove any extra whitespace from column names
-        
-        if 'time' in df.columns:
-            df["time"] = pd.to_datetime(df["time"], errors='coerce')
-            return df, "time"
-        else:
-            st.error(f"The 'time' column was not found in the file: {city_file}.")
-            return None, None
-    except FileNotFoundError:
-        st.error(f"The file {city_file} could not be found in the 'data' directory. Please check the file path.")
-        return None, None
-    except Exception as e:
-        st.error(f"An error occurred while loading the data for {city_file}: {e}")
-        return None, None
-
-# Calculate water saved by skipping watering on rainy days
-def calculate_water_savings(df, daily_watering_gallons=5):
-    rainy_days = df[df['precipitation'] > 0]
-    water_saved = len(rainy_days) * daily_watering_gallons  # Water saved in gallons
-    return water_saved
-
-# Calculate water-to-tree equivalent
-def calculate_tree_impact(water_saved_gallons, water_per_tree_gallons=20):
-    trees = water_saved_gallons / water_per_tree_gallons
-    return int(trees)
-
-# Generate recommendations using OpenAI ChatCompletion API with retry for rate limit error
-def generate_recommendations(prediction_df, water_saved, trees_plantable):
-    prediction_summary = prediction_df.to_string(index=False)
-    impact_statement = (
-        f"By skipping watering on rainy days, you saved approximately {water_saved} gallons of water, "
-        f"which could support the planting of {trees_plantable} trees."
-    )
-
-    prompt = (
-        f"Based on the following future weather predictions:\n{prediction_summary}\n\n"
-        f"{impact_statement}\n\n"
-        "Provide recommendations for household water conservation and usage strategies that would have a bigger impact."
-    )
-    
-    max_retries = 5  # Set the number of retries
-    retry_delay = 20  # Time to wait (in seconds) between retries if rate limit is hit
-
-    for attempt in range(max_retries):
+# Function to load data based on the selected city
+def load_city_data(city):
+    """Load the CSV file for the selected city."""
+    file_path = city_files.get(city)
+    if file_path:
         try:
-            response = openai.ChatCompletion.create(
-                model="gpt-3.5-turbo",
-                messages=[
-                    {"role": "system", "content": "You are an assistant providing water conservation tips based on weather data."},
-                    {"role": "user", "content": prompt}
-                ],
-                max_tokens=150,
-                temperature=0.5
-            )
-            return impact_statement + "\n\n" + response['choices'][0]['message']['content'].strip()
-        
-        except openai.error.RateLimitError as e:
-            if attempt < max_retries - 1:
-                st.warning(f"Rate limit reached. Retrying in {retry_delay} seconds...")
-                time.sleep(retry_delay)  # Wait before retrying
-            else:
-                st.error("Rate limit exceeded. Please try again later.")
-                return "Rate limit exceeded. Please try again later."
+            return pd.read_csv(file_path)
+        except Exception as e:
+            st.error(f"Error loading data for {city}: {e}")
+    return None
 
-# Streamlit app
-def main():
-    st.title("Enhanced Weather Data Analysis with Predictions and Recommendations")
+# Determine current season based on month
+def get_current_season():
+    """Determine the current season based on the month."""
+    month = datetime.now().month
+    return "Rainy" if month in [11, 12, 1, 2, 3, 4] else "Drought"
 
-    # User selection for city and state
-    city_state = st.selectbox("Choose a city:", list(city_state_map.keys()))
-    city_file = city_state_map[city_state]  # Get the corresponding file name
-    
-    # Load and process data based on the selected city
-    df, date_column = load_data(city_file)
-    
-    if df is not None and date_column:
-        # Calculate water savings by skipping watering on rainy days
-        water_saved = calculate_water_savings(df)
-        
-        # Calculate how many trees could be planted with the saved water
-        trees_plantable = calculate_tree_impact(water_saved)
-        
-        # Display daily precipitation chart
-        st.subheader("Daily Precipitation (inches)")
-        st.line_chart(df.set_index('time')['precipitation'])
-        
-        # Monthly data aggregation
-        monthly_data = df.resample('M', on='time').agg({
-            'temperature': 'mean',
-            'precipitation': 'sum'
-        }).reset_index()
-        st.subheader(f"Monthly Weather Data for {city_state}")
-        st.write(monthly_data)
-        
-        # Plot monthly temperature
-        st.subheader("Average Monthly Temperature (°F)")
-        st.line_chart(monthly_data.set_index('time')['temperature'])
-        
-        # Future pattern prediction
-        st.subheader("Predicted Future Weather Patterns")
-        future_df = pd.DataFrame({
-            'date': [df['time'].max() + timedelta(days=i*30) for i in range(1, 4)],
-            'predicted_temperature': [monthly_data['temperature'].mean()] * 3,
-            'predicted_precipitation': [monthly_data['precipitation'].mean()] * 3
-        })
-        st.write(future_df)
-        
-        # Water Savings and Tree Planting Potential chart
-        st.subheader("Water Savings and Tree Planting Potential")
-        
-        water_data = pd.DataFrame({
-            'Metric': ['Water Saved (Gallons)', 'Trees Plantable'],
-            'Value': [water_saved, trees_plantable]
-        })
-        st.bar_chart(water_data.set_index('Metric'))
-        
-        # Generative AI recommendations with tree impact statement
-        st.subheader("Recommendations for a Bigger Impact")
-        recommendations = generate_recommendations(future_df, water_saved, trees_plantable)
-        st.write(recommendations)
+# Display summary of the data
+def display_data_summary(data):
+    """Display summary statistics for the loaded data."""
+    if data is not None:
+        st.write("### Data Summary")
+        st.write(data.describe())
     else:
-        st.error("Data for the selected city is not available or the date column was not found.")
+        st.warning("No data available for the selected city.")
 
-if __name__ == "__main__":
-    main()
+# Generate fun facts and insights
+def generate_fun_facts_and_insights(data, city):
+    """Generate fun facts about rainwater collection and creative insights."""
+    if data is None or 'precipitation' not in data.columns:
+        st.warning("Precipitation data is unavailable for insights.")
+        return None
+
+    # Data analysis: Rainwater collection
+    roof_size = 1000  # Assume 1,000 square feet of roof
+    gallon_per_inch_per_sqft = 0.623  # Gallons collected per inch of rain per square foot
+    total_precip = data['precipitation'].sum()  # Total precipitation in inches
+    rainwater_collected = roof_size * total_precip * gallon_per_inch_per_sqft
+
+    # Fun facts
+    fun_facts = [
+        f"With {total_precip:.2f} inches of rain this season, a 1,000 square-foot roof could collect approximately {rainwater_collected:.0f} gallons of water.",
+        f"This amount of water could fill approximately {rainwater_collected / 80:.0f} standard bathtubs!",
+        f"Alternatively, this water could hydrate {rainwater_collected / 5:.0f} medium-sized trees for a month.",
+        f"Or, it could supply drinking water for one person for {rainwater_collected / 13.2:.0f} days, based on average daily usage."
+    ]
+
+    # Display fun facts
+    st.write("### Fun Facts About Rainwater Collection")
+    for fact in fun_facts:
+        st.write(f"- {fact}")
+
+    # Generate creative AI insights using OpenAI
+    prompt = (
+        f"The city of {city} has received {total_precip:.2f} inches of rain this season, which could collect approximately {rainwater_collected:.0f} gallons of water. "
+        "Generate creative and impactful suggestions for using this rainwater to benefit the community and support environmental sustainability. "
+        "Focus on innovative, community-centered, and social good applications."
+    )
+    try:
+        response = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",
+            messages=[
+                {"role": "system", "content": "You are a helpful assistant focused on sustainability and social good."},
+                {"role": "user", "content": prompt}
+            ],
+            max_tokens=300,
+            temperature=0.7
+        )
+        insights = response.choices[0].message["content"].strip()
+        st.write("### AI-Powered Insights")
+        st.write(insights)
+    except Exception as e:
+        st.error(f"Error generating AI insights: {e}")
+
+# Streamlit UI
+st.title("Bay Area Weather & Water Conservation Insights")
+st.subheader("Get localized weather data, actionable water-saving tips, and impactful AI-driven insights!")
+
+# City selection
+cities = list(city_files.keys())
+selected_city = st.selectbox("Select a city:", cities)
+
+# Load data based on the selected city
+data = load_city_data(selected_city)
+
+# Display data summary
+if data is not None:
+    display_data_summary(data)
+
+# Generate fun facts and insights
+if st.button("Generate Fun Facts and AI-Powered Insights"):
+    current_season = get_current_season()
+    st.write(f"### Current Season: {current_season}")
+    generate_fun_facts_and_insights(data, selected_city)
