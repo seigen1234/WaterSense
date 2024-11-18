@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import requests
 import openai
+import os
 from datetime import datetime, timedelta
 
 # UtilityAPI base URL and headers (replace 'YOUR_API_KEY' with actual API key)
