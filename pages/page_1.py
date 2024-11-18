@@ -1,16 +1,18 @@
 import streamlit as st
 import pandas as pd
 import requests
+import openai
 from datetime import datetime, timedelta
 
 # UtilityAPI base URL and headers (replace 'YOUR_API_KEY' with actual API key)
 API_URL = 'https://utilityapi.com/api/v2/meters/{meter_id}/intervals'
 headers = {'Authorization': 'Bearer YOUR_API_KEY'}
 
+# OpenAI API setup (make sure to add your OpenAI API key here)
+openai_api_key = os.getenv('OPENAI_API_KEY')
 
 def load_interval_data_csv(file_path):
     return pd.read_csv(file_path)
-
 
 def load_interval_data_api(meter_id, start_date, end_date):
     url = API_URL.format(meter_id=meter_id)
@@ -21,7 +23,6 @@ def load_interval_data_api(meter_id, start_date, end_date):
     else:
         st.error("Failed to fetch data from UtilityAPI.")
         return pd.DataFrame()
-
 
 # Function to provide suggestions based on efficiency score
 def get_suggestions(efficiency_score):
@@ -62,7 +63,15 @@ def get_suggestions(efficiency_score):
             "Keep up the great habits, and consider sharing your tips with others.",
             "Stay mindful of any sudden changes, and keep up with regular maintenance for sustained efficiency."
         ]
-
+    
+def get_chatbot_response(user_input):
+    response = openai.ChatCompletion.create(
+        model="gpt-3.5-turbo",
+        messages=[
+            {"role": "user", "content": user_input}
+        ]
+    )
+    return response.choices[0].message['content']
 
 def water_usage_tracker():
     # Main content for Water Usage Tracker
@@ -130,15 +139,15 @@ def water_usage_tracker():
     # Add Chatbot Feature
     st.markdown("### 🤖 Ask the Water Habits Chatbot")
     user_input = st.text_input("What would you like to know about water habits?")
+
     if st.button("Ask"):
         if user_input:
-            st.write("Chatbot Response:")
-            # Call OpenAI API here if functional
-            st.write("This is where the chatbot response would appear.")
+            response = get_chatbot_response(user_input)
+            st.write("**Chatbot Response:**")
+            st.write(response)
         else:
-            st.warning("Please enter a question to ask the chatbot.")
+            st.write("Please enter a question to ask the chatbot.")
 
-
-# If the script is run independently
-if "water_usage_tracker" not in st.session_state:
+# Running the app
+if __name__ == "__main__":
     water_usage_tracker()
