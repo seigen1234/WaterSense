@@ -125,8 +125,13 @@ def water_usage_tracker():
         st.metric(label="Efficiency Score (Average is 0%)", value=f"{efficiency_score:.2f}%")
 
         # Efficiency explanation
-        st.markdown("""### Understanding Your Efficiency Score""")
-        st.markdown("""- Efficiency measures your water usage compared to the average household.""")
+        st.markdown("""
+        ### Understanding Your Efficiency Score:
+        - **Efficiency Score**: Measures your water usage against an average expected usage based on the number of people in your household.
+        - **Score Calculation Formula**:
+          - Average Expected Usage: `Number of People × 50 gallons/day × 7 days`
+          - Efficiency Score: `100 - (Total Usage / Average Expected Usage × 100)`
+        """)
 
         # Provide suggestions based on efficiency score
         st.markdown("### 💡 Suggestions to Improve Efficiency")
