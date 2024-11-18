@@ -1,9 +1,17 @@
 import streamlit as st
+import os
+from PIL import Image
+from pages.page_1 import water_usage_tracker
 # Main page for Water Conservation Application
 
 
-# Set page configuration
-st.set_page_config(page_title="Water Usage Efficiency", page_icon="💧", layout="wide")
+st.set_page_config(page_title="WaterSense", page_icon="💧", layout="wide")
+
+# Path to the logo image
+logo_path = os.path.join(os.getcwd(), "logo.png")
+
+
+
 
 # Custom CSS styling
 st.markdown(
@@ -11,7 +19,7 @@ st.markdown(
     <style>
         /* Background color */
         .main {
-            background-color: #f0f7f5;
+            background-color: #CAF0F8;
         }
         
         /* Sidebar styling */
@@ -86,9 +94,7 @@ st.markdown(
 )
 
 # Your existing code here, without modification
-
-
-st.title("Water Conservation & Usage Application")
+st.title("WaterSense")
 st.markdown("""
 Welcome to the Water Conservation & Usage Application! This tool is designed to help you monitor and manage your household's water usage effectively. 
 Through this app, you can track your water consumption, receive personalized conservation tips, and see potential savings based on your usage patterns.
@@ -101,7 +107,7 @@ page = st.selectbox(
 )
 # Load the corresponding pages based on the dropdown selection
 if page == "Water Usage Tracker":
-    exec(open("pages/page_1.py").read())
+    water_usage_tracker()
 elif page == "Water Conservation Utility Guide":
     exec(open("pages/page_2.py").read())
 elif page == "Weather Data Analysis & Recommendations":
