@@ -23,6 +23,47 @@ def load_interval_data_api(meter_id, start_date, end_date):
         return pd.DataFrame()
 
 
+# Function to provide suggestions based on efficiency score
+def get_suggestions(efficiency_score):
+    if efficiency_score < -50:  # Significantly inefficient usage
+        return [
+            "Your water usage is much higher than expected. Try taking shorter showers, fixing leaks, and using water-saving appliances.",
+            "Consider using a broom instead of a hose to clean driveways and sidewalks.",
+            "Check your irrigation system regularly for leaks or inefficient settings.",
+            "You may benefit from installing low-flow fixtures or even a smart irrigation controller."
+        ]
+    elif -50 <= efficiency_score < -20:  # Moderately inefficient usage
+        return [
+            "Your water usage is higher than expected. Try to reduce shower times and avoid letting water run unnecessarily.",
+            "Consider watering plants early in the morning or late evening to minimize evaporation.",
+            "Check your home for any minor leaks or areas where you can conserve more."
+        ]
+    elif -20 <= efficiency_score < 0:  # Slightly inefficient usage
+        return [
+            "You're close to the expected usage. Reducing water usage slightly could help you improve your efficiency score.",
+            "Try small changes, like turning off the tap while brushing your teeth or washing dishes more efficiently.",
+            "Consider reusing water where possible, like capturing rainwater for outdoor plants."
+        ]
+    elif 0 <= efficiency_score < 20:  # Efficient usage
+        return [
+            "Great job! You're using water close to the expected amount. Keep up these habits!",
+            "Consider sharing your conservation practices with friends or family to encourage efficient water use.",
+            "Think about further steps like installing rainwater harvesting systems or smart water sensors."
+        ]
+    elif 20 <= efficiency_score < 50:  # Highly efficient usage
+        return [
+            "Excellent job! Your water usage is below expected levels, which means you're conserving well.",
+            "Maintain these habits to continue conserving water effectively.",
+            "Consider periodic checks of appliances and fixtures to ensure ongoing efficiency."
+        ]
+    else:  # Extremely efficient usage
+        return [
+            "Outstanding! Your water usage is well below expected levels.",
+            "Keep up the great habits, and consider sharing your tips with others.",
+            "Stay mindful of any sudden changes, and keep up with regular maintenance for sustained efficiency."
+        ]
+
+
 def water_usage_tracker():
     # Main content for Water Usage Tracker
     st.markdown("### 🌊 Welcome to the Water Usage Tracker!")
@@ -69,7 +110,7 @@ def water_usage_tracker():
 
         # Display metrics
         st.metric(label="Total Usage for the Week", value=f"{total_usage_week:.2f} gallons")
-        st.metric(label="Efficiency Score", value=f"{efficiency_score:.2f}%")
+        st.metric(label="Efficiency Score (Average is 0%)", value=f"{efficiency_score:.2f}%")
 
         # Efficiency explanation
         st.markdown("""
@@ -79,6 +120,12 @@ def water_usage_tracker():
           - Average Expected Usage: `Number of People × 50 gallons/day × 7 days`
           - Efficiency Score: `100 - (Total Usage / Average Expected Usage × 100)`
         """)
+
+        # Provide suggestions based on efficiency score
+        st.markdown("### 💡 Suggestions to Improve Efficiency")
+        suggestions = get_suggestions(efficiency_score)
+        for suggestion in suggestions:
+            st.write(f"- {suggestion}")
 
     # Add Chatbot Feature
     st.markdown("### 🤖 Ask the Water Habits Chatbot")
