@@ -155,7 +155,7 @@ custom_css = """
 st.markdown(custom_css, unsafe_allow_html=True)
 
 # Path to your logo file
-logo_path = "logo.png"  # Replace with the correct path to your logo
+logo_path = "Logo.png"  # Replace with the correct path to your logo
 
 # Display the logo at the top of the sidebar
 with st.sidebar:
