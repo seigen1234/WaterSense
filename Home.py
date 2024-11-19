@@ -24,9 +24,9 @@ st.markdown(
         }
         
         /* Input and button styling */
-        .stNumberInput, .stTextInput, .stButton {
+        .stNumberInput, .stTextInput{
             border-radius: 10px;
-            background-color: #ffffff;
+            background-color: #d8eefe;
             border: 1px solid #87ceeb;
             padding: 8px;
             font-size: 16px;
