@@ -129,3 +129,38 @@ elif page == "Water Conservation Utility Guide":
     exec(open("pages/page_2.py").read())  # Load page_2.py dynamically
 elif page == "Weather Data Analysis & Recommendations":
     exec(open("pages/page_3.py").read())  # Load page_3.py dynamically
+
+
+
+import streamlit as st
+
+# CSS for transparent sidebar background and logo positioning
+custom_css = """
+<style>
+    /* Make sidebar background transparent */
+    [data-testid="stSidebar"] {
+        background-color: rgba(255, 255, 255, 0.8); /* Adjust transparency */
+    }
+    /* Center and adjust logo in the sidebar */
+    [data-testid="stSidebar"] img {
+        display: block;
+        margin-left: auto;
+        margin-right: auto;
+        margin-bottom: 20px;
+    }
+</style>
+"""
+
+# Inject custom CSS
+st.markdown(custom_css, unsafe_allow_html=True)
+
+# Path to your logo file
+logo_path = "logo.png"  # Replace with the correct path to your logo
+
+# Display the logo at the top of the sidebar
+with st.sidebar:
+    st.image(logo_path, use_column_width=True)  # Add logo above the navigation tabs
+
+# Example main content
+st.title("Welcome to WaterSense!")
+st.write("This is your app content.")
