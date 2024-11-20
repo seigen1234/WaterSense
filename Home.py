@@ -124,11 +124,11 @@ if page == "Select a Page":
     # Just display the main page content without any page load
     st.write("Please select a page to navigate.")
 elif page == "Water Usage Tracker":
-    exec(open("pages/page_1.py").read())  # Function from page_1.py
+    exec(open("pages/Water Usage Tracker.py").read())  # Function from page_1.py
 elif page == "Water Conservation Utility Guide":
-    exec(open("pages/page_2.py").read())  # Load page_2.py dynamically
+    exec(open("pages/Water Conservation Utility Guide.py").read())  # Load page_2.py dynamically
 elif page == "Weather Data Analysis & Recommendations":
-    exec(open("pages/page_3.py").read())  # Load page_3.py dynamically
+    exec(open("pages/Weather Data Analysis.py").read())  # Load page_3.py dynamically
 
 
 
